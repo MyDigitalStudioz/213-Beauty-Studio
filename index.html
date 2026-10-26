@@ -281,6 +281,89 @@
       .ab-book { background: var(--rose); color: #fff; }
       .ab-ghost { background: var(--blush-soft); color: var(--rose-deep); border: 1px solid var(--line); }
 
+      /* ---------- polish pass: motion & feel (transforms/opacity only) ---------- */
+      /* hero entrance — pure CSS keyframes, so the copy is never trapped
+         hidden if JavaScript fails; it simply animates in on load */
+      @keyframes heroRise {
+        from { opacity: 0; transform: translateY(18px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes heroPhotoIn {
+        from { opacity: 0; transform: translateY(14px) scale(1.015); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .hero-eyebrow, .hero-copy h1, .hero-sub, .hero-services, .hero-ctas, .status-line {
+        animation: heroRise 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      }
+      .hero-copy h1 { animation-delay: 0.08s; }
+      .hero-sub { animation-delay: 0.18s; }
+      .hero-services { animation-delay: 0.28s; }
+      .hero-ctas { animation-delay: 0.38s; }
+      .status-line { animation-delay: 0.48s; }
+      .hero-photo { animation: heroPhotoIn 1s cubic-bezier(0.22, 0.61, 0.36, 1) 0.15s both; }
+
+      /* scroll reveals — the hidden state exists only when JS has added
+         .reveal-init to <html>; without JS (or IntersectionObserver)
+         everything stays fully visible */
+      [data-reveal] {
+        transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+      }
+      .reveal-init [data-reveal] { opacity: 0; transform: translateY(22px); }
+      .reveal-init [data-reveal].revealed { opacity: 1; transform: translateY(0); }
+
+      /* ambient warmth — the existing fur accents drift very slowly,
+         scaled up a touch so the movement never opens an edge */
+      @keyframes furDrift {
+        from { transform: scale(1.07) translate3d(-1.2%, -0.6%, 0); }
+        to { transform: scale(1.07) translate3d(1.2%, 0.8%, 0); }
+      }
+      .quote-band::before { animation: furDrift 22s ease-in-out infinite alternate; }
+      #experts::before { animation: furDrift 26s ease-in-out infinite alternate-reverse; }
+
+      /* expert card life */
+      .expert { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+      .expert:active { transform: translateY(-1px) scale(0.995); }
+      .mono { transition: transform 0.3s ease; }
+      .svc { transition: transform 0.25s ease; }
+      .svc:active { transform: scale(0.99); }
+      .svc img { transition: transform 0.6s ease; }
+      .about-photo img, .visit-photo img { transition: transform 0.6s ease; }
+      @media (hover: hover) {
+        .expert:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 18px 34px -18px rgba(156, 44, 91, 0.35);
+        }
+        .expert:hover .mono { transform: scale(1.04); }
+        .svc:hover img { transform: scale(1.04); }
+        .about-photo:hover img, .visit-photo:hover img { transform: scale(1.03); }
+      }
+      /* sheen sweep on each expert's booking button (desktop hover) */
+      .expert .btn { position: relative; overflow: hidden; }
+      .expert .btn::after {
+        content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
+        background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+        transform: skewX(-18deg); transition: left 0.6s ease; pointer-events: none;
+      }
+      @media (hover: hover) and (min-width: 720px) {
+        .expert .btn:hover::after { left: 120%; }
+      }
+
+      /* press states + sticky bar slide-in (transform armed by JS only,
+         so the bar is never stuck off-screen without it) */
+      .actionbar a { transition: transform 0.15s ease, background 0.15s ease; }
+      .actionbar a:active { transform: scale(0.97); }
+      .actionbar { transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1); }
+      body.bar-pre .actionbar { transform: translateY(110%); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hero-eyebrow, .hero-copy h1, .hero-sub, .hero-services, .hero-ctas,
+        .status-line, .hero-photo { animation: none; }
+        .quote-band::before, #experts::before { animation: none; }
+        [data-reveal], .expert, .mono, .svc, .svc img,
+        .about-photo img, .visit-photo img, .actionbar, .actionbar a,
+        .expert .btn::after { transition: none; }
+      }
+
       @media (min-width: 720px) {
         .hero { padding-top: 48px; }
         .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 44px; }
@@ -608,6 +691,108 @@
             if (days.indexOf(day) !== -1) items[i].classList.add("today");
           }
         } catch (e) { /* keep the static fallback text */ }
+      })();
+    </script>
+    <script>
+      (function () {
+        // Polish pass: scroll reveals + sticky-bar slide-in.
+        // Everything here is progressive enhancement — if any of it fails,
+        // the page simply stays in its fully visible static state.
+        try {
+          var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+          // ---- scroll reveals (once-only, staggered across the grids) ----
+          var targets = document.querySelectorAll(
+            ".sec-head, .svc, .about-photo, .about-copy, .quote-band blockquote, .expert, .visit-photo, .visit-card"
+          );
+          if (!reduced && "IntersectionObserver" in window && targets.length) {
+            var groups = [
+              document.querySelectorAll(".svc-grid .svc"),
+              document.querySelectorAll(".expert-grid .expert")
+            ];
+            for (var g = 0; g < groups.length; g++) {
+              for (var i = 0; i < groups[g].length; i++) {
+                groups[g][i].style.transitionDelay = Math.min(i * 70, 350) + "ms";
+              }
+            }
+            for (var t = 0; t < targets.length; t++) {
+              targets[t].setAttribute("data-reveal", "");
+            }
+            document.documentElement.classList.add("reveal-init");
+            var revealOne = function (el) {
+              if (!el.hasAttribute("data-reveal")) return;
+              el.classList.add("revealed");
+              // Clean up after the reveal so hover transforms are free again
+              setTimeout(function () {
+                el.removeAttribute("data-reveal");
+                el.classList.remove("revealed");
+                el.style.transitionDelay = "";
+              }, 1200);
+            };
+            var io = new IntersectionObserver(function (entries) {
+              entries.forEach(function (en) {
+                if (!en.isIntersecting) return;
+                revealOne(en.target);
+                io.unobserve(en.target);
+              });
+            }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+            for (var o = 0; o < targets.length; o++) io.observe(targets[o]);
+            // Failsafe — viewport-scoped, NOT a blanket reveal. Content the
+            // user can see (or is about to reach) must never sit stuck at
+            // opacity 0, but elements well below the fold stay un-revealed
+            // until the observer fires as they approach, so their fade/slide
+            // is actually seen instead of playing out unseen at load.
+            var nearViewport = function (el, margin) {
+              var r = el.getBoundingClientRect();
+              var vh = window.innerHeight || document.documentElement.clientHeight;
+              // Reached or passed, or within ~1.5 viewport heights below.
+              return r.bottom >= -margin && r.top <= vh + margin;
+            };
+            var rescueNear = function () {
+              var vh = window.innerHeight || document.documentElement.clientHeight;
+              for (var f = 0; f < targets.length; f++) {
+                if (targets[f].hasAttribute("data-reveal") && nearViewport(targets[f], vh * 1.5)) {
+                  revealOne(targets[f]);
+                  io.unobserve(targets[f]);
+                }
+              }
+            };
+            // Scroll-driven rescue: anything the user actually reaches gets
+            // revealed even if the observer somehow misses it.
+            var rescueTicking = false;
+            window.addEventListener("scroll", function () {
+              if (rescueTicking) return;
+              rescueTicking = true;
+              window.requestAnimationFrame(function () {
+                rescueNear();
+                rescueTicking = false;
+              });
+            }, { passive: true });
+            // Early rescue: only what's at/near the first screen.
+            setTimeout(rescueNear, 1400);
+            // Last-resort sweep: still viewport-scoped — it clears the hidden
+            // state only for elements the user has actually reached or passed
+            // (or is within ~1.5 viewport heights of). Anything farther below
+            // stays armed for its scroll-in moment. The observer keeps
+            // running either way, so nothing can end up permanently hidden:
+            // the moment an element nears the viewport the observer (or this
+            // same proximity rule) reveals it.
+            setTimeout(rescueNear, 3200);
+          }
+
+          // ---- sticky mobile bar slides up once past the hero ----
+          var bar = document.querySelector(".actionbar");
+          var hero = document.querySelector(".hero");
+          if (bar && hero && !reduced) {
+            var updateBar = function () {
+              var past = window.scrollY > hero.offsetTop + hero.offsetHeight - 80;
+              document.body.classList.toggle("bar-pre", !past);
+            };
+            updateBar();
+            window.addEventListener("scroll", updateBar, { passive: true });
+            window.addEventListener("resize", updateBar);
+          }
+        } catch (e) { /* static page remains fully usable */ }
       })();
     </script>
   </body>
