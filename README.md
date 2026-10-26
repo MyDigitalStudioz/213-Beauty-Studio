@@ -4,11 +4,13 @@
 
 A concept redesign mockup of 213 Beauty Studio (Montebello, CA), built 2026-10-26 as a free pitch preview — Mia's outreach for a possible website/branding rebuild. **This is not the client's live site and the studio has not (yet) bought it.**
 
+**Live preview: https://mydigitalstudioz.github.io/213-Beauty-Studio/**
+
 ## Status
 
 | | |
 |---|---|
-| Type | Pitch mockup — private repo, no GitHub Pages (client has not approved anything) |
+| Type | Pitch mockup — public repo, GitHub Pages live from `main` (Jon's call 2026-10-26, for shareable pitch links) |
 | Built from | The studio's live site (213beautystudio.com) — their real photos, tagline, roster, address, hours |
 | Companion repo | `MyDigitalStudioz/213-Beauty-Studio-Team-Pages` — individual worker pages that link from this site's expert directory |
 
